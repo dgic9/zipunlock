@@ -4,20 +4,22 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import time
 import random
-from config import Config
+import os
+import uuid
 
 app = Flask(__name__)
-app.config.from_object(Config)
-
-# Enable CORS (Netlify support)
 CORS(app)
 
-# Rate limiting (anti abuse)
+# Rate limit
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=["10 per minute"]
 )
+
+# Temp upload folder
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # -------------------------
 # Helpers
@@ -43,42 +45,47 @@ def success(data):
 @app.route("/", methods=["GET"])
 def home():
     return success({
-        "service": "ZIP Unlocker Simulator API",
-        "version": "1.0",
-        "note": "This is a simulation backend"
+        "service": "Archive Recovery Tool API",
+        "mode": "SIMULATION",
+        "legal": True
     })
 
 
 @app.route("/unlock", methods=["POST"])
 @limiter.limit("5 per minute")
 def unlock():
-    if not request.is_json:
-        return error("JSON body required")
+    # Files check
+    if "zipfile" not in request.files or "wordlist" not in request.files:
+        return error("zipfile and wordlist files are required")
 
-    data = request.get_json()
+    zip_file = request.files["zipfile"]
+    wordlist_file = request.files["wordlist"]
 
-    filename = data.get("filename")
-    wordlist_size = data.get("wordlist_size", 1000)
+    if zip_file.filename == "" or wordlist_file.filename == "":
+        return error("Invalid file selection")
 
-    # Validation
-    if not filename:
-        return error("filename is required")
+    # Save files temporarily (NO processing)
+    job_id = str(uuid.uuid4())[:8]
 
-    if not isinstance(wordlist_size, int) or wordlist_size <= 0:
-        return error("wordlist_size must be a positive number")
+    zip_path = os.path.join(UPLOAD_FOLDER, f"{job_id}_{zip_file.filename}")
+    wordlist_path = os.path.join(UPLOAD_FOLDER, f"{job_id}_{wordlist_file.filename}")
 
-    # Simulate processing
+    zip_file.save(zip_path)
+    wordlist_file.save(wordlist_path)
+
+    # ⚠️ SAFE SIMULATION (no cracking)
     time.sleep(2)
 
     found = random.choice([True, False])
 
     result = {
-        "file": filename,
-        "checked_passwords": wordlist_size,
+        "job_id": job_id,
+        "archive": zip_file.filename,
+        "wordlist": wordlist_file.filename,
         "password_found": found,
         "password": "demo123" if found else None,
         "engine": "SIMULATOR",
-        "legal": True
+        "note": "No real cracking performed"
     }
 
     return success(result)
@@ -89,4 +96,4 @@ def health():
     return jsonify({"status": "ok"})
 
 
-# ❌ Production me app.run nahi likhte
+# ❌ app.run() mat likhna (Render / Gunicorn use karega)
