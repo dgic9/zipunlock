@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ZIP Unlocker Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="card">
+  <h1>ZIP Unlocker (Demo)</h1>
+
+  <input id="zipname" placeholder="ZIP file name">
+  <input id="wordlist" type="number" placeholder="Wordlist size">
+
+  <button onclick="unlock()">Start Unlock</button>
+
+  <pre id="output"></pre>
+</div>
+
+<script>function unlock() {
+  const zipname = document.getElementById("zipname").value;
+  const wordlist = document.getElementById("wordlist").value;
+
+  fetch("https://YOUR_BACKEND_URL/unlock", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      filename: zipname,
+      wordlist_size: wordlist
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("output").textContent =
+      JSON.stringify(data, null, 2);
+  });
+}</script>
+</body>
+</html>
