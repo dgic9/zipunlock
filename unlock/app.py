@@ -42,12 +42,18 @@ def success(data):
 # Routes
 # -------------------------
 
-@app.route("/", methods=["GET"])
-def home():
-    return success({
-        "service": "Archive Recovery Tool API",
-        "mode": "SIMULATION",
-        "legal": True
+@app.route("/unlock", methods=["POST", "GET"])
+def unlock():
+    if request.method == "GET":
+        return jsonify({
+            "status": "ok",
+            "message": "Unlock service is running"
+        })
+
+    # POST logic (tumhara existing code)
+    return jsonify({
+        "status": "success",
+        "note": "POST request received"
     })
 
 
